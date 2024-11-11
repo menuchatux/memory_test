@@ -97,7 +97,7 @@ def should_continue(state: ChatState):
 builder = StateGraph(ChatState, config_schema=ChatConfigurable)
 builder.add_node(bot)
 builder.add_node(schedule_memories)
-builder.add_node("tools", ToolNode(model))
+builder.add_node("tools", ToolNode(tools))
 
 builder.add_edge("__start__", "bot")
 builder.add_edge("bot", should_continue,
