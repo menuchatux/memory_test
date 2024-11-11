@@ -24,6 +24,8 @@ class ChatState:
 
 @tool
 async def example_tool(query: str) -> str:
+
+    """Use this tool when the user asks to do a tool call."""
     return f"You asked: {query}"
 
 
