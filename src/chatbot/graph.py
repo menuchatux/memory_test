@@ -9,9 +9,11 @@ from langgraph.graph.message import Messages, add_messages
 from langgraph.store.base import BaseStore
 from langgraph_sdk import get_client
 from typing_extensions import Annotated
-
+from langchain_core.tools import tool
 from chatbot.configuration import ChatConfigurable
 from chatbot.utils import format_memories, init_model
+from langgraph.prebuilt import ToolNode
+from langchain_openai import ChatOpenAI
 
 
 @dataclass
@@ -20,6 +22,14 @@ class ChatState:
 
     messages: Annotated[list[Messages], add_messages]
 
+@tool
+async def example_tool(query: str) -> str:
+    return f"You asked: {query}"
+
+
+tools = [example_tool]
+
+model = ChatOpenAI(model="gpt-4o-mini").bind_tools(tools)
 
 async def bot(
     state: ChatState, config: RunnableConfig, store: BaseStore
@@ -31,7 +41,6 @@ async def bot(
     # you can also filter by content.
     items = await store.asearch(namespace)
 
-    model = init_model(configurable.model)
     prompt = configurable.system_prompt.format(
         user_info=format_memories(items),
         time=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
@@ -77,12 +86,21 @@ async def schedule_memories(state: ChatState, config: RunnableConfig) -> None:
         },
     )
 
+def should_continue(state: ChatState):
+    last_message = state["messages"][-1]
+    if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
+        return "schedule_memories"
+    return "continue"
 
 builder = StateGraph(ChatState, config_schema=ChatConfigurable)
 builder.add_node(bot)
 builder.add_node(schedule_memories)
+builder.add_node("tools", ToolNode(model))
 
 builder.add_edge("__start__", "bot")
-builder.add_edge("bot", "schedule_memories")
+builder.add_edge("bot", should_continue,
+                 {"continue": "tools", "schedule_memories": "schedule_memories"})
+builder.add_edge("tools", "bot")
+builder.add_edge("schedule_memories", "__end__")
 
 graph = builder.compile()
