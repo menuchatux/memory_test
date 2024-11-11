@@ -100,7 +100,7 @@ builder.add_node(schedule_memories)
 builder.add_node("tools", ToolNode(tools))
 
 builder.add_edge("__start__", "bot")
-builder.add_edge("bot", should_continue,
+builder.add_conditional_edges("bot", should_continue,
                  {"continue": "tools", "schedule_memories": "schedule_memories"})
 builder.add_edge("tools", "bot")
 builder.add_edge("schedule_memories", "__end__")
