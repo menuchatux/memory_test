@@ -13,7 +13,7 @@ from langchain_core.tools import tool
 from chatbot.configuration import ChatConfigurable
 from chatbot.utils import format_memories, init_model
 from langgraph.prebuilt import ToolNode
-from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 
 
 @dataclass
@@ -29,7 +29,7 @@ async def example_tool(query: str) -> str:
 
 tools = [example_tool]
 
-model = ChatOpenAI(model="gpt-4o-mini").bind_tools(tools)
+model = ChatAnthropic(model="claude-3-5-sonnet-20240620").bind_tools(tools)
 
 async def bot(
     state: ChatState, config: RunnableConfig, store: BaseStore
